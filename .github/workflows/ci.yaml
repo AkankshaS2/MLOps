@@ -1,50 +1,46 @@
-# Github actions workflow 
-# Github automatically looks for workflow file inside .github/workflows/
-
-#give workflow a meaningful name
+# GitHub Actions workflow
+# GitHub automatically looks for workflow files inside .github/workflows/
 
 name: Iris ML API - CI Pipeline
 
-#define when Github should run this workfloe 
+# Define trigger events
 on:
-  #Run CI whenever code is pushed to main branch
   push:
     branches:
       - main
+  pull_request:
+    branches:
+      - main
 
-      #also validate proposed changes before they are merged
-    pull_request:
-      branches:
-        - main
-#
 permissions:
   contents: read
-#define the jobs that make up the pipeline
+
 jobs:
   test-and-build:
-    #Github provides a fresh Ubuntu VM for this job
     runs-on: ubuntu-latest
-    #steps
+
     steps:
-      #step 1: Download the repo content to the runner
+      # Step 1: Download repo content to runner
       - name: Check out repository
         uses: actions/checkout@v4
 
-      #Step 2: Install Python on runner
-      - name: Install Python on Runner
+      # Step 2: Set up Python runtime
+      - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: "3.14"
-      # Step 3: Install the dependencies needed to run the tests
-      - name: Install Python dependencies
-        run: |
-          python -m pip innstall --upgrade pip
-          pip install -r requirements.txt 
+          python-version: "3.12" # Switch to 3.14 if your wheels/dockerfile specifically require it
+          cache: "pip"           # Speeds up runs by caching downloaded wheels
 
-      #Step 4: Execute the automated tests
+      # Step 3: Install dependencies
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      # Step 4: Execute automated tests
       - name: Run automated tests
         run: python -m pytest -v
 
-      # Step 5: Build image only after tests have passed
+      # Step 5: Build Docker image after tests pass
       - name: Build Docker image
         run: docker build -t iris-ml-api:${{ github.sha }} .
